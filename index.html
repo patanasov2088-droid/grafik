@@ -3,23 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Моят Сервиз - Автоматичен График</title>
+    <title>Автосервиз - Професионален График</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 12px; color: #333; }
+        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 12px; color: #333; max-width: 600px; margin: 0 auto; }
         h2 { text-align: center; color: #2c3e50; margin: 5px 0; }
         .box { background: white; padding: 12px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .date-input { width: 100%; padding: 10px; font-size: 1.1rem; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; text-align: center; font-weight: bold; }
+        
+        /* КАЛЕНДАР */
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; font-size: 1.1rem; }
+        .cal-btn { background: #34495e; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+        .cal-weekday { font-weight: bold; font-size: 0.8rem; color: #7f8c8d; padding-bottom: 3px; }
+        
+        .cal-cell { padding: 8px 0; font-size: 1rem; cursor: pointer; border-radius: 6px; font-weight: bold; border: 2px solid transparent; }
+        .cal-cell.empty { cursor: default; background: transparent !important; }
+        
+        /* ЦВЕТОВЕ НА КАЛЕНДАРА */
+        .day-green { background-color: #2ecc71; color: white; } /* Свободен */
+        .day-red { background-color: #e74c3c; color: white; }   /* Има часове */
+        .day-active { border-color: #2980b9 !important; box-shadow: 0 0 6px rgba(41, 128, 185, 0.5); }
+
+        .date-title { font-size: 1.2rem; font-weight: bold; color: white; margin: 15px 0 10px 0; text-align: center; background: #34495e; padding: 8px; border-radius: 6px; }
+
+        /* ЧАСОВЕ */
         .slot { background: white; border-radius: 8px; padding: 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 6px solid #2ecc71; }
         .slot.busy { border-left-color: #e74c3c; }
         .time { font-size: 1.2rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
-        .info { font-size: 0.95rem; margin-bottom: 8px; }
-        .input-group { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
-        .form-input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
-        .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.9rem; margin-top: 5px; }
+        .info { font-size: 0.95rem; margin-bottom: 8px; background: #fafafa; padding: 5px; border-radius: 4px; }
+        .input-group input { width: 100%; padding: 8px; margin-bottom: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
+        
+        .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
         .btn-save { background: #2ecc71; color: white; }
         .btn-delete { background: #e74c3c; color: white; }
-        textarea { width: 100%; height: 60px; margin-top: 5px; padding: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.8rem; }
-        .main-btn { width: 100%; padding: 10px; background: #34495e; color: white; border: none; border-radius: 5px; font-weight: bold; margin-top: 5px; cursor: pointer; }
+        
+        textarea { width: 100%; height: 50px; margin-top: 5px; padding: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.8rem; }
+        .main-btn { width: 100%; padding: 10px; color: white; border: none; border-radius: 5px; font-weight: bold; margin-top: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -27,105 +45,92 @@
     <h2>ГРАФИК СЕРВИЗ</h2>
     
     <div class="box">
-        <label style="font-size:0.85rem; color:#7f8c8d; font-weight:bold;">1. Избери Дата:</label>
-        <input type="date" id="datePicker" class="date-input" onchange="renderSchedule()">
+        <div class="cal-header">
+            <button class="cal-btn" onclick="moveMonth(-1)">◀</button>
+            <span id="calTitle"></span>
+            <button class="cal-btn" onclick="moveMonth(1)">▶</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
     </div>
 
+    <div class="date-title" id="viewDateTitle">Дата: --.--.----</div>
     <div id="schedule-list"></div>
 
-    <div class="box" style="margin-top:20px; background: #fdfefe;">
-        <label style="font-weight:bold; font-size:0.9rem; color: #7f8c8d;">Архив за застраховка (по желание):</label>
-        <textarea id="dataStorage" placeholder="Тук се генерира код за бекъп..."></textarea>
+    <div class="box" style="margin-top:15px; background: #fdfefe;">
+        <label style="font-weight:bold; font-size:0.85rem; color: #7f8c8d;">Управление на данните (Viber):</label>
+        <textarea id="dataStorage" placeholder="Тук автоматично се подготвя кодът за архив..."></textarea>
         <button class="main-btn" style="background:#2ecc71;" onclick="copyData()">📋 КОПИРАЙ ЗА VIBER</button>
         <button class="main-btn" style="background:#95a5a6; font-size:0.8rem;" onclick="importData()">🔄 ВЪЗСТАНОВИ ОТ СТАР КОД</button>
     </div>
 
     <script>
-        const timeSlots = ["09:00", "11:00", "13:00", "15:00", "17:00"];
+        const hours = ["09:00", "11:00", "13:00", "15:00", "17:00"];
+        const months = ["Януари", "Февруари", "Март", "Април", "Май", "Юни", "Юли", "Август", "Септември", "Октомври", "Ноември", "Декември"];
+        const weekdays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"];
+        
+        let viewDate = new Date();
+        let today = new Date();
+        let selectedDateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        
+        let db = {}; // Основната база данни в паметта на страницата
 
-        // Задаване на днешна дата по подразбиране
-        document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
+        function hasAppointments(dateStr) {
+            for (let h of hours) {
+                if (db[`${dateStr}_${h}`]) return true;
+            }
+            return false;
+        }
 
-        function renderSchedule() {
-            const selectedDate = document.getElementById('datePicker').value;
+        function drawCalendar() {
+            const year = viewDate.getFullYear();
+            const month = viewDate.getMonth();
+            document.getElementById('calTitle').innerText = `${months[month]} ${year}`;
+            
+            const grid = document.getElementById('calGrid');
+            grid.innerHTML = '';
+            
+            weekdays.forEach(d => grid.innerHTML += `<div class="cal-weekday">${d}</div>`);
+            
+            let firstDayJS = new Date(year, month, 1).getDay();
+            let startOffset = firstDayJS === 0 ? 6 : firstDayJS - 1;
+            let totalDays = new Date(year, month + 1, 0).getDate();
+            
+            for (let i = 0; i < startOffset; i++) {
+                grid.innerHTML += `<div class="cal-cell empty"></div>`;
+            }
+            
+            for (let day = 1; day <= totalDays; day++) {
+                let currentStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                let colorClass = hasAppointments(currentStr) ? 'day-red' : 'day-green';
+                if (currentStr === selectedDateStr) colorClass += ' day-active';
+                
+                grid.innerHTML += `<div class="cal-cell ${colorClass}" onclick="pickDate('${currentStr}')">${day}</div>`;
+            }
+        }
+
+        function moveMonth(dir) {
+            viewDate.setMonth(viewDate.getMonth() + dir);
+            drawCalendar();
+        }
+
+        function pickDate(dateStr) {
+            selectedDateStr = dateStr;
+            drawCalendar();
+            drawSchedule();
+        }
+
+        function drawSchedule() {
+            const p = selectedDateStr.split('-');
+            document.getElementById('viewDateTitle').innerText = `Избрана дата: ${p[2]}.${p[1]}.${p[0]} г.`;
+            
             const container = document.getElementById('schedule-list');
             container.innerHTML = '';
 
-            timeSlots.forEach(time => {
-                const key = `${selectedDate}_${time}`;
-                // Директно четене от автоматичната памет на телефона
-                const saved = localStorage.getItem(key);
-                const entry = saved ? JSON.parse(saved) : null;
+            hours.forEach(time => {
+                const key = `${selectedDateStr}_${time}`;
+                let entry = db[key];
                 
-                let html = '';
                 if (entry) {
-                    html = `
+                    container.innerHTML += `
                         <div class="slot busy">
-                            <div class="time">⏰ ${time} <span style="color:#e74c3c; font-size:0.85rem;">[ЗАЕТ]</span></div>
-                            <div class="info">
-                                <strong>Клиент:</strong> ${entry.name}<br>
-                                <strong>Кола:</strong> ${entry.car}<br>
-                                <strong>Ремонт:</strong> ${entry.job}
-                            </div>
-                            <button class="btn btn-delete" onclick="clearSlot('${time}')">❌ ИЗТРИЙ ЧАСА</button>
-                        </div>
-                    `;
-                } else {
-                    html = `
-                        <div class="slot">
-                            <div class="time">⏰ ${time} <span style="color:#2ecc71; font-size:0.85rem;">[СВОБОДЕН]</span></div>
-                            <div class="input-group">
-                                <input type="text" id="name_${time}" class="form-input" placeholder="Име и Телефон">
-                                <input type="text" id="car_${time}" class="form-input" placeholder="Автомобил">
-                                <input type="text" id="job_${time}" class="form-input" placeholder="Ремонт">
-                                <button class="btn btn-save" onclick="bookSlot('${time}')">➕ ЗАПИШИ</button>
-                            </div>
-                        </div>
-                    `;
-                }
-                container.innerHTML += html;
-            });
-            updateBackupTextArea();
-        }
-
-        function bookSlot(time) {
-            const selectedDate = document.getElementById('datePicker').value;
-            const key = `${selectedDate}_${time}`;
-            const name = document.getElementById(`name_${time}`).value.trim();
-            const car = document.getElementById(`car_${time}`).value.trim() || "Не е посочена";
-            const job = document.getElementById(`job_${time}`).value.trim() || "Преглед";
-
-            if (!name) { alert("Въведете име на клиента!"); return; }
-
-            const appointment = { name, car, job };
-            // Автоматично записване в паметта на телефона
-            localStorage.setItem(key, JSON.stringify(appointment));
-            renderSchedule();
-        }
-
-        function clearSlot(time) {
-            if (confirm("Сигурен ли си, че изтриваш часа?")) {
-                const selectedDate = document.getElementById('datePicker').value;
-                const key = `${selectedDate}_${time}`;
-                // Изтриване от автоматичната памет
-                localStorage.removeItem(key);
-                renderSchedule();
-            }
-        }
-
-        // Генерира цялостен текстов код от localStorage за застраховка във Viber
-        function updateBackupTextArea() {
-            let fullDb = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key.includes('_')) { // взимаме само нашите ключове за часове
-                    try {
-                        fullDb[key] = JSON.parse(localStorage.getItem(key));
-                    } catch(e) {}
-                }
-            }
-            document.getElementById('dataStorage').value = JSON.stringify(fullDb);
-        }
-
-        function copyData() {
-            const textarea = document.getElementById('dataStorage');
+                            <div cl
