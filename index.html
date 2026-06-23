@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Моят Сервиз - График</title>
+    <title>Моят Сервиз - Автоматичен График</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 12px; color: #333; }
         h2 { text-align: center; color: #2c3e50; margin: 5px 0; }
@@ -33,17 +33,17 @@
 
     <div id="schedule-list"></div>
 
-    <div class="box" style="margin-top:20px;">
-        <label style="font-weight:bold; font-size:0.9rem;">3. Копирай кода за архивиране (във Viber):</label>
-        <textarea id="dataStorage" placeholder="Тук автоматично се създава архив..."></textarea>
+    <div class="box" style="margin-top:20px; background: #fdfefe;">
+        <label style="font-weight:bold; font-size:0.9rem; color: #7f8c8d;">Архив за застраховка (по желание):</label>
+        <textarea id="dataStorage" placeholder="Тук се генерира код за бекъп..."></textarea>
         <button class="main-btn" style="background:#2ecc71;" onclick="copyData()">📋 КОПИРАЙ ЗА VIBER</button>
         <button class="main-btn" style="background:#95a5a6; font-size:0.8rem;" onclick="importData()">🔄 ВЪЗСТАНОВИ ОТ СТАР КОД</button>
     </div>
 
     <script>
         const timeSlots = ["09:00", "11:00", "13:00", "15:00", "17:00"];
-        let db = {};
 
+        // Задаване на днешна дата по подразбиране
         document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
 
         function renderSchedule() {
@@ -53,7 +53,9 @@
 
             timeSlots.forEach(time => {
                 const key = `${selectedDate}_${time}`;
-                const entry = db[key];
+                // Директно четене от автоматичната памет на телефона
+                const saved = localStorage.getItem(key);
+                const entry = saved ? JSON.parse(saved) : null;
                 
                 let html = '';
                 if (entry) {
@@ -83,7 +85,7 @@
                 }
                 container.innerHTML += html;
             });
-            updateTextArea();
+            updateBackupTextArea();
         }
 
         function bookSlot(time) {
@@ -95,32 +97,35 @@
 
             if (!name) { alert("Въведете име на клиента!"); return; }
 
-            db[key] = { name, car, job };
+            const appointment = { name, car, job };
+            // Автоматично записване в паметта на телефона
+            localStorage.setItem(key, JSON.stringify(appointment));
             renderSchedule();
         }
 
         function clearSlot(time) {
-            const selectedDate = document.getElementById('datePicker').value;
-            const key = `${selectedDate}_${time}`;
-            delete db[key];
-            renderSchedule();
+            if (confirm("Сигурен ли си, че изтриваш часа?")) {
+                const selectedDate = document.getElementById('datePicker').value;
+                const key = `${selectedDate}_${time}`;
+                // Изтриване от автоматичната памет
+                localStorage.removeItem(key);
+                renderSchedule();
+            }
         }
 
-        function updateTextArea() { document.getElementById('dataStorage').value = JSON.stringify(db); }
+        // Генерира цялостен текстов код от localStorage за застраховка във Viber
+        function updateBackupTextArea() {
+            let fullDb = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.includes('_')) { // взимаме само нашите ключове за часове
+                    try {
+                        fullDb[key] = JSON.parse(localStorage.getItem(key));
+                    } catch(e) {}
+                }
+            }
+            document.getElementById('dataStorage').value = JSON.stringify(fullDb);
+        }
 
         function copyData() {
             const textarea = document.getElementById('dataStorage');
-            textarea.select();
-            document.execCommand('copy');
-            alert("Копирано! Постави го във Viber.");
-        }
-
-        function importData() {
-            const text = document.getElementById('dataStorage').value;
-            if(!text) { alert("Постави кода от Viber първо!"); return; }
-            try { db = JSON.parse(text); renderSchedule(); alert("Графикът е зареден!"); } catch(e) { alert("Грешен код!"); }
-        }
-        renderSchedule();
-    </script>
-</body>
-</html>
