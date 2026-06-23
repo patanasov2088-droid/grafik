@@ -32,7 +32,7 @@
 <body>
 
     <h2>ГРАФИК СЕРВИЗ</h2>
-    <div id="syncStatus" class="status-sync">⏳ Зареждане на графика от интернет...</div>
+    <div id="syncStatus" class="status-sync">⏳ Зареждане на графика от Google Таблица...</div>
     
     <div class="box">
         <div class="cal-header">
@@ -47,9 +47,8 @@
     <div id="schedule-list"></div>
 
     <script>
-        // Твоите готови ключове (вече настроени):
-        const BIN_ID = "6a3a9f16da38895dfef228d8";
-        const MASTER_KEY = "$2a$10$wXldMtVZM9hnTbK4wrYwUO7MiWkiA/p7XGjGHTYJzmK/iUaQ3rzmS";
+        // Твоят готов Google скрипт линк:
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4hiDc-vVwE4EokHKM4GREoNLbQof4WEDbpm1Z0DAp_oaoGg3_qMSJHKLk15vKdxzG/exec";
 
         const hours = ["09:00", "11:00", "13:00", "15:00", "17:00"];
         const months = ["Януари", "Февруари", "Март", "Април", "Май", "Юни", "Юли", "Август", "Септември", "Октомври", "Ноември", "Декември"];
@@ -62,44 +61,33 @@
 
         function loadFromCloud() {
             document.getElementById('syncStatus').innerText = "⏳ Зареждане на данните...";
-            fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                headers: { "X-Master-Key": MASTER_KEY }
-            })
+            fetch(SCRIPT_URL)
             .then(res => res.json())
             .then(data => {
-                if (data.record && data.record.record) {
-                    db = data.record.record;
-                } else if (data.record) {
-                    db = data.record;
-                } else {
-                    db = {};
-                }
-                
-                if (db.test) delete db.test;
-
+                db = data || {};
                 document.getElementById('syncStatus').innerText = "✅ Графикът е обновен";
                 drawCalendar();
                 drawSchedule();
             })
             .catch(e => {
-                document.getElementById('syncStatus').innerText = "❌ Грешка при връзка с интернет паметта";
+                document.getElementById('syncStatus').innerText = "❌ Грешка при зареждане на данните";
                 drawCalendar();
                 drawSchedule();
             });
         }
 
         function saveToCloud() {
-            document.getElementById('syncStatus').innerText = "⏳ Автоматично записване в интернет...";
-            fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-Master-Key": MASTER_KEY
-                },
+            document.getElementById('syncStatus').innerText = "⏳ Автоматично записване в Google Таблица...";
+            fetch(SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(db)
             })
             .then(() => {
-                document.getElementById('syncStatus').innerText = "✅ Всичко е записано в интернет!";
+                document.getElementById('syncStatus').innerText = "✅ Всичко е записано сигурно!";
+                // Малко закъснение преди презареждане, за да може Google да обработи данните
+                setTimeout(loadFromCloud, 1500);
             });
         }
 
@@ -133,3 +121,17 @@
                 grid.innerHTML += `<div class="cal-cell ${colorClass}" onclick="pickDate('${currentStr}')">${day}</div>`;
             }
         }
+
+        function moveMonth(dir) {
+            viewDate.setMonth(viewDate.getMonth() + dir);
+            drawCalendar();
+        }
+
+        function pickDate(dateStr) {
+            selectedDateStr = dateStr;
+            drawCalendar();
+            drawSchedule();
+        }
+
+        function drawSchedule() {
+            const p = s
