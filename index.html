@@ -47,8 +47,8 @@
     <div id="schedule-list"></div>
 
     <script>
-        // Твоите готови ключове са тук:
-        const BIN_ID = "6a3a99b9f5f4af5e292394b7";
+        // Твоите готови ключове (вече настроени):
+        const BIN_ID = "6a3a9f16da38895dfef228d8";
         const MASTER_KEY = "$2a$10$wXldMtVZM9hnTbK4wrYwUO7MiWkiA/p7XGjGHTYJzmK/iUaQ3rzmS";
 
         const hours = ["09:00", "11:00", "13:00", "15:00", "17:00"];
@@ -60,7 +60,6 @@
         let selectedDateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
         let db = {};
 
-        // Зареждане от новия v3 адрес
         function loadFromCloud() {
             document.getElementById('syncStatus').innerText = "⏳ Зареждане на данните...";
             fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -68,7 +67,6 @@
             })
             .then(res => res.json())
             .then(data => {
-                // Изваждаме данните, като проверяваме дали са в .record или .record.record заради новата бета версия
                 if (data.record && data.record.record) {
                     db = data.record.record;
                 } else if (data.record) {
@@ -77,7 +75,6 @@
                     db = {};
                 }
                 
-                // Премахваме тестовия запис, ако съществува
                 if (db.test) delete db.test;
 
                 document.getElementById('syncStatus').innerText = "✅ Графикът е обновен";
@@ -91,7 +88,6 @@
             });
         }
 
-        // Записване в новия v3 адрес
         function saveToCloud() {
             document.getElementById('syncStatus').innerText = "⏳ Автоматично записване в интернет...";
             fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
@@ -131,4 +127,9 @@
             
             for (let day = 1; day <= totalDays; day++) {
                 let currentStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                let colorClass = hasAppointments(currentStr) ? 'day-red' : 'day-green'
+                let colorClass = hasAppointments(currentStr) ? 'day-red' : 'day-green';
+                if (currentStr === selectedDateStr) colorClass += ' day-active';
+                
+                grid.innerHTML += `<div class="cal-cell ${colorClass}" onclick="pickDate('${currentStr}')">${day}</div>`;
+            }
+        }
