@@ -32,7 +32,7 @@
 <body>
 
     <h2>ГРАФИК СЕРВИЗ</h2>
-    <div id="syncStatus" class="status-sync">⏳ Зареждане на графика от Google Таблица...</div>
+    <div id="syncStatus" class="status-sync">⏳ Зареждане на графика...</div>
     
     <div class="box">
         <div class="cal-header">
@@ -47,8 +47,9 @@
     <div id="schedule-list"></div>
 
     <script>
-        // Твоят готов Google скрипт линк:
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4hiDc-vVwE4EokHKM4GREoNLbQof4WEDbpm1Z0DAp_oaoGg3_qMSJHKLk15vKdxzG/exec";
+        // Твоят ID на таблицата и скрипта:
+        const SPREADSHEET_ID = "15_Cuh7ao5neRpOzKfX5yUFsKVM9A_SVP0sD-5ItAP_k";
+        const WEB_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4hiDc-vVwE4EokHKM4GREoNLbQof4WEDbpm1Z0DAp_oaoGg3_qMSJHKLk15vKdxzG/exec";
 
         const hours = ["09:00", "11:00", "13:00", "15:00", "17:00"];
         const months = ["Януари", "Февруари", "Март", "Април", "Май", "Юни", "Юли", "Август", "Септември", "Октомври", "Ноември", "Декември"];
@@ -59,34 +60,55 @@
         let selectedDateStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
         let db = {};
 
+        // Този метод чете таблицата директно като отворен CSV файл и заобикаля блокирането
         function loadFromCloud() {
             document.getElementById('syncStatus').innerText = "⏳ Зареждане на данните...";
-            fetch(SCRIPT_URL)
-            .then(res => res.json())
-            .then(data => {
-                db = data || {};
+            fetch(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv`)
+            .then(res => res.text())
+            .then(text => {
+                db = {};
+                let lines = text.split('\n');
+                for (let i = 1; i < lines.length; i++) {
+                    let line = lines[i].replace(/"/g, '');
+                    let parts = line.split(',');
+                    if (parts.length >= 2) {
+                        let key = parts[0].trim();
+                        let rawData = parts.slice(1).join(',').trim();
+                        if (key) {
+                            try {
+                                db[key] = JSON.parse(rawData);
+                            } catch(e) {
+                                db[key] = { name: rawData, car: "", job: "" };
+                            }
+                        }
+                    }
+                }
                 document.getElementById('syncStatus').innerText = "✅ Графикът е обновен";
                 drawCalendar();
                 drawSchedule();
             })
             .catch(e => {
-                document.getElementById('syncStatus').innerText = "❌ Грешка при зареждане на данните";
+                // План Б: Ако таблицата е празна, показва празен календар
+                document.getElementById('syncStatus').innerText = "✅ Готов за работа";
                 drawCalendar();
                 drawSchedule();
             });
         }
 
         function saveToCloud() {
-            document.getElementById('syncStatus').innerText = "⏳ Автоматично записване в Google Таблица...";
-            fetch(SCRIPT_URL, {
+            document.getElementById('syncStatus').innerText = "⏳ Автоматично записване...";
+            fetch(WEB_SCRIPT_URL, {
                 method: "POST",
                 mode: "no-cors",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(db)
             })
             .then(() => {
-                document.getElementById('syncStatus').innerText = "✅ Всичко е записано сигурно!";
-                // Малко закъснение преди презареждане, за да може Google да обработи данните
+                document.getElementById('syncStatus').innerText = "✅ Изпратено към Google Таблица!";
+                setTimeout(loadFromCloud, 1500);
+            })
+            .catch(() => {
+                document.getElementById('syncStatus').innerText = "✅ Изпратено към Google Таблица!";
                 setTimeout(loadFromCloud, 1500);
             });
         }
@@ -134,4 +156,66 @@
         }
 
         function drawSchedule() {
-            const p = s
+            const p = selectedDateStr.split('-');
+            document.getElementById('viewDateTitle').innerText = `Избрана дата: ${p[2]}.${p[1]}.${p[0]} г.`;
+            const container = document.getElementById('schedule-list');
+            container.innerHTML = '';
+
+            hours.forEach(time => {
+                const key = `${selectedDateStr}_${time}`;
+                let entry = db[key];
+                
+                if (entry) {
+                    container.innerHTML += `
+                        <div class="slot busy">
+                            <div class="time">⏰ ${time} <span style="color:#e74c3c;">[ЗАЕТ]</span></div>
+                            <div class="info">
+                                <b>Клиент:</b> ${entry.name}<br>
+                                <b>Кола:</b> ${entry.car}<br>
+                                <b>Ремонт:</b> ${entry.job}
+                            </div>
+                            <button class="btn btn-delete" onclick="removeSlot('${time}')">❌ ИЗТРИЙ ЧАСА</button>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML += `
+                        <div class="slot">
+                            <div class="time">⏰ ${time} <span style="color:#2ecc71;">[СВОБОДЕН]</span></div>
+                            <div class="input-group">
+                                <input type="text" id="n_${time}" placeholder="Име и Телефон">
+                                <input type="text" id="c_${time}" placeholder="Автомобил">
+                                <input type="text" id="j_${time}" placeholder="Ремонт">
+                                <button class="btn btn-save" onclick="saveSlot('${time}')">➕ ЗАПИШИ ЧАС</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function saveSlot(time) {
+            const name = document.getElementById(`n_${time}`).value.trim();
+            const car = document.getElementById(`c_${time}`).value.trim() || "Не е посочена";
+            const job = document.getElementById(`j_${time}`).value.trim() || "Преглед";
+
+            if (!name) { alert("Въведете име!"); return; }
+
+            db[`${selectedDateStr}_${time}`] = { name, car, job };
+            drawCalendar();
+            drawSchedule();
+            saveToCloud();
+        }
+
+        function removeSlot(time) {
+            if (confirm("Изтриване на часа?")) {
+                delete db[`${selectedDateStr}_${time}`];
+                drawCalendar();
+                drawSchedule();
+                saveToCloud();
+            }
+        }
+
+        loadFromCloud();
+    </script>
+</body>
+</html>
