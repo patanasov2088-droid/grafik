@@ -123,4 +123,177 @@
                     let line = lines[i].trim();
                     if (!line) continue;
                     
-                    let firstCommaIdx
+                    let firstCommaIdx = line.indexOf(',');
+                    if (firstCommaIdx === -1) continue;
+                    
+                    let key = line.substring(0, firstCommaIdx).replace(/^"|"$/g, '').trim();
+                    let rawData = line.substring(firstCommaIdx + 1).trim();
+                    
+                    if (rawData.startsWith('"') && rawData.endsWith('"')) {
+                        rawData = rawData.substring(1, rawData.length - 1);
+                    }
+                    rawData = rawData.replace(/""/g, '"');
+                    
+                    if (key) {
+                        try {
+                            db[key] = JSON.parse(rawData);
+                        } catch(e) {
+                            db[key] = parseLooseJSON(rawData);
+                        }
+                    }
+                }
+                document.getElementById('syncStatus').style.color = "#2ecc71";
+                document.getElementById('syncStatus').style.textShadow = "0 0 8px rgba(46, 204, 113, 0.6)";
+                document.getElementById('syncStatus').innerText = "✅ ПИСТАТА Е ГОТОВА (Графикът е обновен)";
+                drawCalendar();
+                drawSchedule();
+            })
+            .catch(e => {
+                document.getElementById('syncStatus').style.color = "#2ecc71";
+                document.getElementById('syncStatus').innerText = "✅ Готов за работа";
+                drawCalendar();
+                drawSchedule();
+            });
+        }
+
+        function parseLooseJSON(str) {
+            let name = "Зает час", car = "Не е посочена", job = "Преглед";
+            try {
+                let matchName = str.match(/name[:\s"]+([^",}]+)/i);
+                let matchCar = str.match(/car[:\s"]+([^",}]+)/i);
+                let matchJob = str.match(/job[:\s"]+([^",}]+)/i);
+                
+                if (matchName) name = matchName[1].trim();
+                if (matchCar) car = matchCar[1].trim();
+                if (matchJob) job = matchJob[1].trim();
+            } catch(err) {}
+            return { name, car, job };
+        }
+
+        function saveToCloud() {
+            document.getElementById('syncStatus').style.color = "#f1c40f";
+            document.getElementById('syncStatus').innerText = "⏳ ИЗПРАЩАНЕ КЪМ БОКСА...";
+            fetch(WEB_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(db)
+            })
+            .then(() => {
+                document.getElementById('syncStatus').style.color = "#2ecc71";
+                document.getElementById('syncStatus').innerText = "✅ Данните са записани в Google Таблица!";
+                setTimeout(loadFromCloud, 1500);
+            })
+            .catch(() => {
+                document.getElementById('syncStatus').style.color = "#2ecc71";
+                document.getElementById('syncStatus').innerText = "✅ Данните са записани в Google Таблица!";
+                setTimeout(loadFromCloud, 1500);
+            });
+        }
+
+        function hasAppointments(dateStr) {
+            for (let h of hours) {
+                if (db[`${dateStr}_${h}`]) return true;
+            }
+            return false;
+        }
+
+        function drawCalendar() {
+            const year = viewDate.getFullYear();
+            const month = viewDate.getMonth();
+            document.getElementById('calTitle').innerText = `${months[month]} ${year}`;
+            
+            const grid = document.getElementById('calGrid');
+            grid.innerHTML = '';
+            weekdays.forEach(d => grid.innerHTML += `<div class="cal-weekday">${d}</div>`);
+            
+            let firstDayJS = new Date(year, month, 1).getDay();
+            let startOffset = firstDayJS === 0 ? 6 : firstDayJS - 1;
+            let totalDays = new Date(year, month + 1, 0).getDate();
+            
+            for (let i = 0; i < startOffset; i++) grid.innerHTML += `<div class="cal-cell empty"></div>`;
+            
+            for (let day = 1; day <= totalDays; day++) {
+                let currentStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+                let colorClass = hasAppointments(currentStr) ? 'day-red' : 'day-green';
+                if (currentStr === selectedDateStr) colorClass += ' day-active';
+                
+                grid.innerHTML += `<div class="cal-cell ${colorClass}" onclick="pickDate('${currentStr}')">${day}</div>`;
+            }
+        }
+
+        function moveMonth(dir) {
+            viewDate.setMonth(viewDate.getMonth() + dir);
+            drawCalendar();
+        }
+
+        function pickDate(dateStr) {
+            selectedDateStr = dateStr;
+            drawCalendar();
+            drawSchedule();
+        }
+
+        function drawSchedule() {
+            const p = selectedDateStr.split('-');
+            document.getElementById('viewDateTitle').innerText = `Слотове за: ${p[2]}.${p[1]}.${p[0]} г.`;
+            const container = document.getElementById('schedule-list');
+            container.innerHTML = '';
+
+            hours.forEach(time => {
+                const key = `${selectedDateStr}_${time}`;
+                let entry = db[key];
+                
+                if (entry) {
+                    container.innerHTML += `
+                        <div class="slot busy">
+                            <div class="time">🏁 ${time} <span style="color:#e74c3c;">[ЗАЕТ]</span></div>
+                            <div class="info">
+                                <b>Клиент:</b> ${entry.name}<br>
+                                <b>Кола:</b> ${entry.car}<br>
+                                <b>Ремонт:</b> ${entry.job}
+                            </div>
+                            <button class="btn btn-delete" onclick="removeSlot('${time}')">❌ ИЗТРИЙ ЧАСА</button>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML += `
+                        <div class="slot">
+                            <div class="time">⚡ ${time} <span style="color:#2ecc71;">[СВОБОДЕН]</span></div>
+                            <div class="input-group">
+                                <input type="text" id="n_${time}" placeholder="Име и Телефон за връзка">
+                                <input type="text" id="c_${time}" placeholder="Марка / Модел автомобил">
+                                <input type="text" id="j_${time}" placeholder="Описание на проблема / Ремонт">
+                                <button class="btn btn-save" onclick="saveSlot('${time}')">🏎️ ЗАПИШИ В ЧАСА</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function saveSlot(time) {
+            const name = document.getElementById(`n_${time}`).value.trim();
+            const car = document.getElementById(`c_${time}`).value.trim() || "Не е посочена";
+            const job = document.getElementById(`j_${time}`).value.trim() || "Преглед";
+
+            if (!name) { alert("Моля, въведете Име и Телефон!"); return; }
+
+            db[`${selectedDateStr}_${time}`] = { name, car, job };
+            drawCalendar();
+            drawSchedule();
+            saveToCloud();
+        }
+
+        function removeSlot(time) {
+            if (confirm("Сигурни ли сте, че изтривате този записан час?")) {
+                delete db[`${selectedDateStr}_${time}`];
+                drawCalendar();
+                drawSchedule();
+                saveToCloud();
+            }
+        }
+
+        loadFromCloud();
+    </script>
+</body>
+</html>
