@@ -3,36 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Автосервиз - Облачен График</title>
+    <title>Автосервиз - Motorsport График</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; margin: 0; padding: 12px; color: #333; max-width: 600px; margin: 0 auto; }
-        h2 { text-align: center; color: #2c3e50; margin: 5px 0; }
-        .box { background: white; padding: 12px; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; font-size: 1.1rem; }
-        .cal-btn { background: #34495e; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        body { 
+            font-family: 'Arial Black', Arial, sans-serif; 
+            /* Motorsport Дизайн - Асфалт и спортни линии */
+            background: 
+                radial-gradient(at 0% 0%, rgba(231, 76, 60, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(46, 204, 113, 0.1) 0px, transparent 50%),
+                linear-gradient(135deg, #111827 0%, #030712 100%);
+            background-attachment: fixed;
+            margin: 0; 
+            padding: 12px; 
+            color: #fff; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            min-height: 100vh;
+        }
+        
+        /* Модерен спортен надпис за заглавието */
+        h2 { 
+            text-align: center; 
+            color: #ffffff; 
+            margin: 15px 0 5px 0; 
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(231, 76, 60, 0.5);
+        }
+        
+        /* Модерен полупрозрачен контейнер (Carbon-Glass ефект) */
+        .box { 
+            background: rgba(255, 255, 255, 0.06); 
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 14px; 
+            border-radius: 12px; 
+            margin-bottom: 12px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); 
+        }
+        
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: bold; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Състезателно червени бутони */
+        .cal-btn { background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.4); }
+        .cal-btn:hover { background: #c0392b; transform: scale(1.05); }
+        
         .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
-        .cal-weekday { font-weight: bold; font-size: 0.8rem; color: #7f8c8d; padding-bottom: 3px; }
-        .cal-cell { padding: 8px 0; font-size: 1rem; cursor: pointer; border-radius: 6px; font-weight: bold; border: 2px solid transparent; }
+        .cal-weekday { font-weight: bold; font-size: 0.85rem; color: #9ca3af; padding-bottom: 5px; text-transform: uppercase; }
+        
+        /* Дизайн на квадратчетата от календара */
+        .cal-cell { padding: 10px 0; font-size: 1rem; cursor: pointer; border-radius: 8px; font-weight: bold; border: 2px solid transparent; transition: 0.15s; }
         .cal-cell.empty { cursor: default; background: transparent !important; }
-        .day-green { background-color: #2ecc71; color: white; }
-        .day-red { background-color: #e74c3c; color: white; }
-        .day-active { border-color: #2980b9 !important; box-shadow: 0 0 6px rgba(41, 128, 185, 0.5); }
-        .date-title { font-size: 1.2rem; font-weight: bold; color: white; margin: 15px 0 10px 0; text-align: center; background: #34495e; padding: 8px; border-radius: 6px; }
-        .slot { background: white; border-radius: 8px; padding: 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 6px solid #2ecc71; }
-        .slot.busy { border-left-color: #e74c3c; }
-        .time { font-size: 1.2rem; font-weight: bold; color: #2c3e50; margin-bottom: 5px; }
-        .info { font-size: 0.95rem; margin-bottom: 8px; background: #fafafa; padding: 5px; border-radius: 4px; line-height: 1.4; }
-        .input-group input { width: 100%; padding: 8px; margin-bottom: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; }
-        .btn { width: 100%; padding: 10px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
-        .btn-save { background: #2ecc71; color: white; }
-        .btn-delete { background: #e74c3c; color: white; }
-        .status-sync { text-align: center; font-size: 0.85rem; font-weight: bold; color: #7f8c8d; margin-bottom: 10px; }
+        
+        /* Пистово зелено (Свободно) и Състезателно червено (Заето) */
+        .day-green { background-color: #2ecc71; color: white; box-shadow: 0 2px 6px rgba(46, 204, 113, 0.3); }
+        .day-red { background-color: #e74c3c; color: white; box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3); }
+        
+        /* Маркиран ден - Син тунинг акцент */
+        .day-active { border-color: #3498db !important; box-shadow: 0 0 12px #3498db !important; transform: scale(1.05); }
+        
+        .date-title { font-size: 1.2rem; font-weight: bold; color: white; margin: 18px 0 12px 0; text-align: center; background: linear-gradient(90deg, #e74c3c, #c0392b); padding: 10px; border-radius: 8px; box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3); text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Слотове за часове */
+        .slot { background: #1f2937; border-radius: 10px; padding: 14px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); border-left: 6px solid #2ecc71; color: #f3f4f6; font-family: Arial, sans-serif; }
+        .slot.busy { border-left-color: #e74c3c; background: #251c1c; }
+        
+        .time { font-family: 'Arial Black', sans-serif; font-size: 1.25rem; font-weight: bold; color: #fff; margin-bottom: 6px; }
+        .info { font-size: 0.95rem; margin-bottom: 10px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px; line-height: 1.5; border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Полета за въвеждане */
+        .input-group input { width: 100%; padding: 10px; margin-bottom: 6px; box-sizing: border-box; border: 1px solid #4b5563; background: #111827; color: white; border-radius: 6px; font-size: 0.9rem; transition: 0.2s; }
+        .input-group input:focus { border-color: #2ecc71; outline: none; background: #1f2937; }
+        
+        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; transition: 0.2s; }
+        .btn-save { background: #2ecc71; color: white; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); }
+        .btn-save:hover { background: #27ae60; }
+        .btn-delete { background: #e74c3c; color: white; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3); }
+        .btn-delete:hover { background: #c0392b; }
+        
+        /* Светещ пистов цвят за статуса */
+        .status-sync { text-align: center; font-size: 0.9rem; font-weight: bold; color: #2ecc71; margin-bottom: 15px; text-shadow: 0 0 8px rgba(46, 204, 113, 0.6); text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
     <h2>ГРАФИК СЕРВИЗ</h2>
-    <div id="syncStatus" class="status-sync">⏳ Зареждане на графика...</div>
+    <div id="syncStatus" class="status-sync">⏳ Зареждане на пистата...</div>
     
     <div class="box">
         <div class="cal-header">
@@ -60,188 +118,8 @@
         let db = {};
 
         function loadFromCloud() {
-            document.getElementById('syncStatus').innerText = "⏳ Зареждане на данните...";
-            fetch(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv`)
-            .then(res => res.text())
-            .then(text => {
-                db = {};
-                // Разделяме редовете по нов ред
-                let lines = text.split(/\r?\n/);
-                
-                for (let i = 1; i < lines.length; i++) {
-                    let line = lines[i].trim();
-                    if (!line) continue;
-                    
-                    // Намираме първата запетая, която разделя Ключа от JSON данните
-                    let firstCommaIdx = line.indexOf(',');
-                    if (firstCommaIdx === -1) continue;
-                    
-                    let key = line.substring(0, firstCommaIdx).replace(/^"|"$/g, '').trim();
-                    let rawData = line.substring(firstCommaIdx + 1).trim();
-                    
-                    // Почистваме кавичките в началото и края на JSON текста, които Google Sheets слага автоматично
-                    if (rawData.startsWith('"') && rawData.endsWith('"')) {
-                        rawData = rawData.substring(1, rawData.length - 1);
-                    }
-                    // Оправяме дублираните кавички "" вътре в текста
-                    rawData = rawData.replace(/""/g, '"');
-                    
-                    if (key) {
-                        try {
-                            db[key] = JSON.parse(rawData);
-                        } catch(e) {
-                            // Ако все пак не успее да се разчете като JSON, опитваме да извадим чист текст
-                            db[key] = parseLooseJSON(rawData);
-                        }
-                    }
-                }
-                document.getElementById('syncStatus').innerText = "✅ Графикът е обновен";
-                drawCalendar();
-                drawSchedule();
-            })
-            .catch(e => {
-                document.getElementById('syncStatus').innerText = "✅ Готов за работа";
-                drawCalendar();
-                drawSchedule();
-            });
-        }
-
-        // Помощна функция, за да извадим думите, дори ако JSON структурата е леко повредена от таблицата
-        function parseLooseJSON(str) {
-            let name = "Зает час", car = "Не е посочена", job = "Преглед";
-            try {
-                let matchName = str.match(/name[:\s"]+([^",}]+)/i);
-                let matchCar = str.match(/car[:\s"]+([^",}]+)/i);
-                let matchJob = str.match(/job[:\s"]+([^",}]+)/i);
-                
-                if (matchName) name = matchName[1].trim();
-                if (matchCar) car = matchCar[1].trim();
-                if (matchJob) job = matchJob[1].trim();
-            } catch(err) {}
-            return { name, car, job };
-        }
-
-        function saveToCloud() {
-            document.getElementById('syncStatus').innerText = "⏳ Автоматично записване...";
-            fetch(WEB_SCRIPT_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(db)
-            })
-            .then(() => {
-                document.getElementById('syncStatus').innerText = "✅ Изпратено към Google Таблица!";
-                setTimeout(loadFromCloud, 1500);
-            })
-            .catch(() => {
-                document.getElementById('syncStatus').innerText = "✅ Изпратено към Google Таблица!";
-                setTimeout(loadFromCloud, 1500);
-            });
-        }
-
-        function hasAppointments(dateStr) {
-            for (let h of hours) {
-                if (db[`${dateStr}_${h}`]) return true;
-            }
-            return false;
-        }
-
-        function drawCalendar() {
-            const year = viewDate.getFullYear();
-            const month = viewDate.getMonth();
-            document.getElementById('calTitle').innerText = `${months[month]} ${year}`;
+            document.getElementById('syncStatus').style.color = "#f1c40f";
+            document.getElementById('syncStatus').style.textShadow = "0 0 8px rgba(241, 196, 15, 0.6)";
+            document.getElementById('syncStatus').innerText = "⏳ Синхронизиране на данните...";
             
-            const grid = document.getElementById('calGrid');
-            grid.innerHTML = '';
-            weekdays.forEach(d => grid.innerHTML += `<div class="cal-weekday">${d}</div>`);
-            
-            let firstDayJS = new Date(year, month, 1).getDay();
-            let startOffset = firstDayJS === 0 ? 6 : firstDayJS - 1;
-            let totalDays = new Date(year, month + 1, 0).getDate();
-            
-            for (let i = 0; i < startOffset; i++) grid.innerHTML += `<div class="cal-cell empty"></div>`;
-            
-            for (let day = 1; day <= totalDays; day++) {
-                let currentStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-                let colorClass = hasAppointments(currentStr) ? 'day-red' : 'day-green';
-                if (currentStr === selectedDateStr) colorClass += ' day-active';
-                
-                grid.innerHTML += `<div class="cal-cell ${colorClass}" onclick="pickDate('${currentStr}')">${day}</div>`;
-            }
-        }
-
-        function moveMonth(dir) {
-            viewDate.setMonth(viewDate.getMonth() + dir);
-            drawCalendar();
-        }
-
-        function pickDate(dateStr) {
-            selectedDateStr = dateStr;
-            drawCalendar();
-            drawSchedule();
-        }
-
-        function drawSchedule() {
-            const p = selectedDateStr.split('-');
-            document.getElementById('viewDateTitle').innerText = `Избрана дата: ${p[2]}.${p[1]}.${p[0]} г.`;
-            const container = document.getElementById('schedule-list');
-            container.innerHTML = '';
-
-            hours.forEach(time => {
-                const key = `${selectedDateStr}_${time}`;
-                let entry = db[key];
-                
-                if (entry) {
-                    container.innerHTML += `
-                        <div class="slot busy">
-                            <div class="time">⏰ ${time} <span style="color:#e74c3c;">[ЗАЕТ]</span></div>
-                            <div class="info">
-                                <b>Клиент:</b> ${entry.name}<br>
-                                <b>Кола:</b> ${entry.car}<br>
-                                <b>Ремонт:</b> ${entry.job}
-                            </div>
-                            <button class="btn btn-delete" onclick="removeSlot('${time}')">❌ ИЗТРИЙ ЧАСА</button>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML += `
-                        <div class="slot">
-                            <div class="time">⏰ ${time} <span style="color:#2ecc71;">[СВОБОДЕН]</span></div>
-                            <div class="input-group">
-                                <input type="text" id="n_${time}" placeholder="Име и Телефон">
-                                <input type="text" id="c_${time}" placeholder="Автомобил">
-                                <input type="text" id="j_${time}" placeholder="Ремонт">
-                                <button class="btn btn-save" onclick="saveSlot('${time}')">➕ ЗАПИШИ ЧАС</button>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-        }
-
-        function saveSlot(time) {
-            const name = document.getElementById(`n_${time}`).value.trim();
-            const car = document.getElementById(`c_${time}`).value.trim() || "Не е посочена";
-            const job = document.getElementById(`j_${time}`).value.trim() || "Преглед";
-
-            if (!name) { alert("Въведете име!"); return; }
-
-            db[`${selectedDateStr}_${time}`] = { name, car, job };
-            drawCalendar();
-            drawSchedule();
-            saveToCloud();
-        }
-
-        function removeSlot(time) {
-            if (confirm("Изтриване на часа?")) {
-                delete db[`${selectedDateStr}_${time}`];
-                drawCalendar();
-                drawSchedule();
-                saveToCloud();
-            }
-        }
-
-        loadFromCloud();
-    </script>
-</body>
-</html>
+            fetch(`
